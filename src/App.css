@@ -11,6 +11,34 @@
   margin: 12px auto;
 }
 
+.skeleton-input {
+  width: 220px;
+  height: 28px;
+  margin: 8px auto;
+}
+
+.skeleton-button {
+  width: 100px;
+  height: 28px;
+  margin: 8px auto;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  margin: 12px auto;
+  border: 3px solid #e0e0e0;
+  border-top-color: #888;
+  border-radius: 50%;
+  animation: spinner-rotate 2s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes skeleton-shimmer {
   0% {
     background-position: 200% 0;

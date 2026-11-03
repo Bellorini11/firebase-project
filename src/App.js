@@ -15,6 +15,7 @@ function App() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
 
   function resetForm() {
     setMode(null);
@@ -39,16 +40,28 @@ function App() {
   function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
     const action =
       mode === "register"
         ? createUserWithEmailAndPassword
         : signInWithEmailAndPassword;
-    action(auth, email, password)
-      .then(({ user }) => {
-        setUserLogHandler(user);
+    const delay = new Promise((resolve) => setTimeout(resolve, 2000));
+    Promise.all([
+      action(auth, email, password).then(
+        (r) => r,
+        (err) => err,
+      ),
+      delay,
+    ])
+      .then(([result]) => {
+        if (result instanceof Error || result?.code) {
+          setError(result.message);
+          return;
+        }
+        setUserLogHandler(result.user);
         resetForm();
       })
-      .catch((err) => setError(err.message));
+      .finally(() => setSubmitting(false));
   }
 
   function logout() {
@@ -65,7 +78,16 @@ function App() {
       <button onClick={() => openMode("register")}>Register</button>
       <button onClick={() => openMode("login")}>Login</button>
       <button onClick={logout}>Logout</button>
-      {mode && (
+      {mode && submitting && (
+        <div aria-busy="true" aria-label="Submitting">
+          <div className="spinner" />
+          <div className="skeleton skeleton-text" />
+          <div className="skeleton skeleton-input" />
+          <div className="skeleton skeleton-input" />
+          <div className="skeleton skeleton-button" />
+        </div>
+      )}
+      {mode && !submitting && (
         <form onSubmit={handleSubmit}>
           <h3>
             {mode === "register"
@@ -93,11 +115,10 @@ function App() {
       )}
       {error && <p className="error">{error}</p>}
       {loading ? (
-        <div
-          className="skeleton skeleton-text"
-          aria-busy="true"
-          aria-label="Loading user"
-        />
+        <div aria-busy="true" aria-label="Loading user">
+          <div className="spinner" />
+          <div className="skeleton skeleton-text" />
+        </div>
       ) : (
         user.email
       )}
