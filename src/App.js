@@ -1,5 +1,16 @@
 import React from "react";
-import { auth } from "./init";
+import { auth, db } from "./init";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  getDoc,
+  doc,
+  query,
+  where,
+  updateDoc,
+  deleteDoc, 
+} from "firebase/firestore";
 import "./App.css";
 import {
   createUserWithEmailAndPassword,
@@ -7,6 +18,58 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
+
+async function updatePost(id, data) {
+  const docRef = doc(db, "posts", id);
+  await updateDoc(docRef, data);
+}
+ function deletePost(id) {
+  const docRef = doc(db, "posts", id);
+  deleteDoc(docRef);
+   
+}
+
+function createPost() {
+  const post = {
+    title: "My Post",
+    content: "This is the content of my post.",
+    ...(auth.currentUser && { uid: auth.currentUser.uid }),
+  };
+  addDoc(collection(db, "posts"), post)
+    .then((docRef) => {
+      console.log("Document written with ID: ", docRef.id);
+    })
+    .catch((error) => {
+      console.error("Error adding document: ", error);
+    });
+}
+async function getALLPosts() {
+  const data = await getDocs(collection(db, "posts"));
+  const posts = data.docs.map((elem) => ({ ...elem.data(), id: elem.id }));
+  console.log(posts);
+}
+
+async function getPostById(id) {
+  const docRef = doc(db, "posts", id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const post = { ...docSnap.data(), id: docSnap.id };
+    console.log(post);
+    return post;
+  }
+  return null;
+}
+
+async function getPostsByUid() {
+const postCollectionRef = await query(
+  collection(db, "posts"),
+  where("uid", "==", auth.currentUser.uid)
+);
+const data = await getDocs(postCollectionRef);
+const posts = data.docs.map((elem) => ({ ...elem.data(), id: elem.id }));
+console.log(posts);
+return posts;
+}
 
 function App() {
   const [user, setUserLogHandler] = React.useState({});
@@ -30,9 +93,10 @@ function App() {
   }
 
   React.useEffect(() => {
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 2000));
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUserLogHandler(user || {});
-      setLoading(false);
+      minDelay.then(() => setLoading(false));
     });
     return unsubscribe;
   }, []);
@@ -78,7 +142,17 @@ function App() {
       <button onClick={() => openMode("register")}>Register</button>
       <button onClick={() => openMode("login")}>Login</button>
       <button onClick={logout}>Logout</button>
-      {mode && submitting && (
+      <button onClick={createPost}>Create Post</button>
+      <button onClick={getALLPosts}>Get All Posts</button>
+      <button onClick={getPostsByUid}>Get Posts By UID</button>
+      <button onClick={updatePost}>Update Post</button>
+      <button
+        onClick={deletePost}>Delete Post</button>
+      <button
+        onClick={getPostById}>
+        Get Post By ID
+      </button>
+      {submitting && (
         <div aria-busy="true" aria-label="Submitting">
           <div className="spinner" />
           <div className="skeleton skeleton-text" />
